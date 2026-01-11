@@ -1,0 +1,131 @@
+# Docker Compose file for RomM microservices deployment
+# This compose file splits RomM into separate frontend and backend containers,
+# providing better scalability and modularity compared to the monolithic deployment.
+#
+# Usage:
+#   docker compose -f docker-compose.microservices.yml build
+#   docker compose -f docker-compose.microservices.yml up -d
+#
+# Services:
+#   - romm-frontend: nginx serving static files and proxying API requests
+#   - romm-backend: Python FastAPI + workers + scheduler + watcher
+#   - romm-db: MariaDB database
+#   - romm-valkey: Valkey (Redis fork) for caching
+
+services:
+  romm-frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      target: frontend-slim  # Change to frontend-full for in-browser emulation support
+    container_name: romm-frontend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - BACKEND_URL=romm-backend:5001
+      - ROMM_PORT=8080
+      - IPV4_ONLY=${IPV4_ONLY:-false}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - romm-backend
+    networks:
+      - romm-network
+
+  romm-backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: backend-slim  # Change to backend-dev for development dependencies
+    container_name: romm-backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - REDIS_HOST=romm-valkey
+      - REDIS_PORT=6379
+      - DB_HOST=romm-db
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-romm}
+      - DB_USER=${DB_USER:-romm}
+      - DB_PASSWD=${DB_PASSWD:-romm}
+      - ROMM_BASE_PATH=/romm
+      - DEV_PORT=5001
+      - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY:-}
+      # Optional: Enable scheduled tasks
+      - ENABLE_RESCAN_ON_FILESYSTEM_CHANGE=${ENABLE_RESCAN_ON_FILESYSTEM_CHANGE:-false}
+      - ENABLE_SCHEDULED_RESCAN=${ENABLE_SCHEDULED_RESCAN:-false}
+      - ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB=${ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB:-false}
+      - ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA=${ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA:-false}
+    ports:
+      - "5000:5000"  # Expose for direct API access if needed
+    volumes:
+      - romm_resources:/romm/resources
+      - romm_assets:/romm/assets
+      - romm_config:/romm/config
+      # Mount your ROM library here - update the path on the left side
+      - ${ROMM_LIBRARY_PATH:-./romm_mock/library}:/romm/library
+    depends_on:
+      romm-db:
+        condition: service_healthy
+      romm-valkey:
+        condition: service_started
+    networks:
+      - romm-network
+
+  romm-db:
+    image: mariadb:11.3.2
+    container_name: romm-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWD:-romm_root}
+      - MARIADB_DATABASE=${DB_NAME:-romm}
+      - MARIADB_USER=${DB_USER:-romm}
+      - MARIADB_PASSWORD=${DB_PASSWD:-romm}
+    volumes:
+      - romm_db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 30s
+      start_interval: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - romm-network
+
+  romm-valkey:
+    image: valkey/valkey:8
+    container_name: romm-valkey
+    restart: unless-stopped
+    command: valkey-server --save 60 1 --loglevel warning
+    volumes:
+      - romm_redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - romm-network
+
+volumes:
+  romm_db_data:
+    name: romm_db_data
+  romm_redis_data:
+    name: romm_redis_data
+  romm_resources:
+    name: romm_resources
+  romm_assets:
+    name: romm_assets
+  romm_config:
+    name: romm_config
+
+networks:
+  romm-network:
+    name: romm-network
+    driver: bridge
