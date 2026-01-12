@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
-      target: frontend-slim  # Change to frontend-full for in-browser emulation support
+      target: frontend-full # Change to frontend-full for in-browser emulation support
     container_name: romm-frontend
     restart: unless-stopped
     env_file: .env
@@ -56,8 +56,6 @@ services:
       - ENABLE_SCHEDULED_RESCAN=${ENABLE_SCHEDULED_RESCAN:-false}
       - ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB=${ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB:-false}
       - ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA=${ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA:-false}
-    ports:
-      - "5000:5000"  # Expose for direct API access if needed
     volumes:
       - romm_resources:/romm/resources
       - romm_assets:/romm/assets
