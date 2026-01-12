@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: romm-valkey
+  namespace: romm
+spec:
+  serviceName: romm-valkey
+  replicas: 1
+  selector:
+    matchLabels:
+      app: romm-valkey
+  template:
+    metadata:
+      labels:
+        app: romm-valkey
+    spec:
+      containers:
+      - name: valkey
+        image: valkey/valkey:8
+        command:
+        - valkey-server
+        - --save
+        - "60"
+        - "1"
+        - --loglevel
+        - warning
+        ports:
+        - containerPort: 6379
+          name: valkey
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - valkey-cli
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        readinessProbe:
+          exec:
+            command:
+            - valkey-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: romm-valkey-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: romm-valkey
+  namespace: romm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: valkey
+  selector:
+    app: romm-valkey

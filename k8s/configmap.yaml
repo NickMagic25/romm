@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: romm-config
+  namespace: romm
+data:
+  # Database configuration
+  DB_HOST: "romm-db"
+  DB_PORT: "3306"
+  DB_NAME: "romm"
+  DB_USER: "romm"
+
+  # Redis/Valkey configuration
+  REDIS_HOST: "romm-valkey"
+  REDIS_PORT: "6379"
+
+  # Backend configuration
+  ROMM_BASE_PATH: "/romm"
+
+  # Frontend configuration
+  BACKEND_URL: "romm-backend.romm:5000"
+  ROMM_PORT: "8080"
+  IPV4_ONLY: "false"
+
+  # Optional: Enable scheduled tasks
+  ENABLE_RESCAN_ON_FILESYSTEM_CHANGE: "false"
+  ENABLE_SCHEDULED_RESCAN: "false"
+  ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB: "false"
+  ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA: "false"
+
+  # Logging
+  LOGLEVEL: "INFO"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: romm-secrets
+  namespace: romm
+type: Opaque
+stringData:
+  # Database secrets
+  DB_PASSWD: "romm"
+  DB_ROOT_PASSWD: "romm_root"
+
+  # Generate this with: openssl rand -hex 32
+  ROMM_AUTH_SECRET_KEY: "your-secret-key-here-replace-me"

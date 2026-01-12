@@ -61,6 +61,9 @@ server {
         proxy_pass http://backend_server;
         proxy_request_buffering off;
         proxy_buffering off;
+        # Add CORP header to allow resources to be loaded by pages with COEP
+        # 'always' ensures header is added even for proxied responses
+        add_header Cross-Origin-Resource-Policy cross-origin always;
     }
 
     # WebSocket and netplay endpoints

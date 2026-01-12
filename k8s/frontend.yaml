@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: romm-frontend
+  namespace: romm
+spec:
+  replicas: 1  # Can be scaled up
+  selector:
+    matchLabels:
+      app: romm-frontend
+  template:
+    metadata:
+      labels:
+        app: romm-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: k3d-registry.localhost:5001/romm-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: BACKEND_URL
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: BACKEND_URL
+        - name: ROMM_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: ROMM_PORT
+        - name: IPV4_ONLY
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: IPV4_ONLY
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: romm-frontend
+  namespace: romm
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: romm-frontend

@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: romm-backend
+  namespace: romm
+spec:
+  replicas: 1  # Can be scaled up
+  selector:
+    matchLabels:
+      app: romm-backend
+  template:
+    metadata:
+      labels:
+        app: romm-backend
+    spec:
+      containers:
+      - name: backend
+        image: k3d-registry.localhost:5001/romm-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: DB_USER
+        - name: DB_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: romm-secrets
+              key: DB_PASSWD
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: REDIS_PORT
+        - name: ROMM_BASE_PATH
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: ROMM_BASE_PATH
+        - name: ROMM_AUTH_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: romm-secrets
+              key: ROMM_AUTH_SECRET_KEY
+        - name: ENABLE_RESCAN_ON_FILESYSTEM_CHANGE
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: ENABLE_RESCAN_ON_FILESYSTEM_CHANGE
+        - name: ENABLE_SCHEDULED_RESCAN
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: ENABLE_SCHEDULED_RESCAN
+        - name: LOGLEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: romm-config
+              key: LOGLEVEL
+        volumeMounts:
+        - name: resources
+          mountPath: /romm/resources
+        - name: assets
+          mountPath: /romm/assets
+        - name: config
+          mountPath: /romm/config
+        - name: library
+          mountPath: /romm/library
+        livenessProbe:
+          httpGet:
+            path: /api/heartbeat
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /api/heartbeat
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: resources
+        persistentVolumeClaim:
+          claimName: romm-resources
+      - name: assets
+        persistentVolumeClaim:
+          claimName: romm-assets
+      - name: config
+        persistentVolumeClaim:
+          claimName: romm-config
+      - name: library
+        hostPath:
+          path: /mnt/romm-library
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: romm-backend
+  namespace: romm
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5000
+    targetPort: 5000
+    protocol: TCP
+    name: http
+  selector:
+    app: romm-backend

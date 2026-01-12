@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-db-data
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-valkey-data
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-resources
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce  # k3d local-path only supports RWO (single-node cluster)
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-assets
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce  # k3d local-path only supports RWO (single-node cluster)
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-config
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce  # k3d local-path only supports RWO (single-node cluster)
+  resources:
+    requests:
+      storage: 1Gi
+---
+# PersistentVolume for local development - maps to host directory
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: romm-library-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-library
+  hostPath:
+    path: /mnt/romm-library
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-library
+  namespace: romm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-library  # Binds to the local PV above
+  resources:
+    requests:
+      storage: 50Gi
