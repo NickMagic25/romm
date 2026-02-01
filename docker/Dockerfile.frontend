@@ -1,0 +1,36 @@
+# Frontend-only image for RomM
+ARG ALPINE_VERSION=3.22
+ARG NODE_VERSION=20.19
+ARG NODE_ALPINE_SHA256=96ee26670a085b1a61231a468db85ae7e493ddfbd8c35797bfa0b99b634665fe
+ARG NGINX_VERSION=1.29.2
+ARG NGINX_SHA256=61e01287e546aac28a3f56839c136b31f590273f3b41187a36f46f6a03bbfe22
+
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION}@sha256:${NODE_ALPINE_SHA256} AS frontend-build
+WORKDIR /front
+
+COPY ./frontend/package*.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+
+COPY ./frontend ./
+RUN npm run build
+
+FROM nginx:${NGINX_VERSION}-alpine${ALPINE_VERSION}@sha256:${NGINX_SHA256} AS frontend-runtime
+
+COPY ./docker/nginx/frontend.nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/nginx/frontend.conf.template /etc/nginx/templates/default.conf.template
+COPY ./docker/nginx/js/decode.js /etc/nginx/js/decode.js
+
+COPY --from=frontend-build /front/dist /usr/share/nginx/html
+COPY ./frontend/assets /usr/share/nginx/html/assets
+COPY ./docker/frontend-entrypoint.sh /usr/share/nginx/frontend-entrypoint.sh
+
+ENV ROMM_BASE_PATH=/romm
+ENV ROMM_BACKEND_URL=http://romm-backend:5000
+ENV ROMM_PORT=8080
+
+RUN chmod +x /usr/share/nginx/frontend-entrypoint.sh
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/share/nginx/frontend-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

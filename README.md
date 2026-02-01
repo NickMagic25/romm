@@ -43,6 +43,60 @@ RomM (ROM Manager) allows you to scan, enrich, browse and play your game collect
 
 To start using RomM, check out the [Quick Start Guide][docs-quick-start-guide] in the docs. If you are having issues with RomM, please review the page for [troubleshooting steps][docs-troubleshooting].
 
+### Kubernetes (Helm)
+
+RomM ships a Helm chart in `charts/romm` plus split frontend/backend Dockerfiles for Kubernetes deployments.
+
+#### Build images
+
+```bash
+docker build -f docker/Dockerfile.backend -t romm-backend:latest .
+docker build -f docker/Dockerfile.frontend -t romm-frontend:latest .
+```
+
+Push the images to your registry and update `values.yaml` (or `--set`) to use your registry/repository tags.
+
+#### Deploy with a PVC
+
+```bash
+helm install romm charts/romm \
+  --set image.backend.repository=registry.example.com/romm-backend \
+  --set image.backend.tag=latest \
+  --set image.frontend.repository=registry.example.com/romm-frontend \
+  --set image.frontend.tag=latest \
+  --set roms.storage.type=pvc \
+  --set roms.storage.pvc.size=200Gi
+```
+
+#### Deploy with an NFS mount
+
+```bash
+helm install romm charts/romm \
+  --set image.backend.repository=registry.example.com/romm-backend \
+  --set image.backend.tag=latest \
+  --set image.frontend.repository=registry.example.com/romm-frontend \
+  --set image.frontend.tag=latest \
+  --set roms.storage.type=nfs \
+  --set roms.storage.nfs.server=10.0.0.10 \
+  --set roms.storage.nfs.path=/exports/romm
+```
+
+#### Supplying secrets
+
+All env vars are defined in `charts/romm/values.yaml`. To pull sensitive values from a Kubernetes Secret, set `secretEnv` with the secret name and key for each variable. For example:
+
+```yaml
+secretEnv:
+  IGDB_CLIENT_SECRET:
+    name: romm-secrets
+    key: igdbClientSecret
+  DB_PASSWD:
+    name: romm-secrets
+    key: dbPassword
+```
+
+Non-secret variables can be set directly under `env` in `values.yaml`.
+
 ## Contributing
 
 To contribute to RomM, please check [Contribution Guide](./CONTRIBUTING.md).

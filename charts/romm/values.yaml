@@ -1,0 +1,140 @@
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+image:
+  backend:
+    repository: romm-backend
+    tag: ""
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: romm-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+
+backend:
+  replicaCount: 1
+  resources: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+frontend:
+  replicaCount: 1
+  backendUrl: http://romm-backend:5000
+  port: 8080
+  resources: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+service:
+  backend:
+    type: ClusterIP
+    port: 5000
+  frontend:
+    type: ClusterIP
+    port: 80
+
+roms:
+  mountPath: /romm
+  storage:
+    type: pvc # pvc | nfs
+    existingClaim: ""
+    pvc:
+      accessModes:
+        - ReadWriteOnce
+      size: 100Gi
+      storageClassName: ""
+    nfs:
+      server: ""
+      path: ""
+      readOnly: false
+
+secretEnv: {}
+
+env:
+  ROMM_BASE_PATH: /romm
+  ROMM_TMP_PATH: ""
+  KIOSK_MODE: "false"
+  IGDB_CLIENT_ID: ""
+  IGDB_CLIENT_SECRET: ""
+  MOBYGAMES_API_KEY: ""
+  SCREENSCRAPER_USER: ""
+  SCREENSCRAPER_PASSWORD: ""
+  STEAMGRIDDB_API_KEY: ""
+  RETROACHIEVEMENTS_API_KEY: ""
+  PLAYMATCH_API_ENABLED: ""
+  LAUNCHBOX_API_ENABLED: ""
+  HASHEOUS_API_ENABLED: ""
+  FLASHPOINT_API_ENABLED: ""
+  HLTB_API_ENABLED: ""
+  TGDB_API_ENABLED: ""
+  DB_HOST: 127.0.0.1
+  DB_PORT: "3306"
+  DB_NAME: romm
+  DB_USER: romm
+  DB_PASSWD: ""
+  DB_ROOT_PASSWD: ""
+  REDIS_HOST: 127.0.0.1
+  REDIS_PORT: "6379"
+  POSTGRES_DB: authentik
+  POSTGRES_USER: authentik
+  POSTGRES_PASSWORD: authentik
+  AUTHENTIK_SECRET_KEY: ""
+  AUTHENTIK_BOOTSTRAP_PASSWORD: ""
+  ROMM_AUTH_SECRET_KEY: ""
+  DISABLE_DOWNLOAD_ENDPOINT_AUTH: ""
+  DISABLE_CSRF_PROTECTION: ""
+  DISABLE_USERPASS_LOGIN: ""
+  OIDC_ENABLED: ""
+  OIDC_PROVIDER: ""
+  OIDC_CLIENT_ID: ""
+  OIDC_CLIENT_SECRET: ""
+  OIDC_REDIRECT_URI: ""
+  OIDC_SERVER_APPLICATION_URL: ""
+  OIDC_CLAIM_ROLES: ""
+  OIDC_ROLE_VIEWER: ""
+  OIDC_ROLE_EDITOR: ""
+  OIDC_ROLE_ADMIN: ""
+  OIDC_TLS_CACERTFILE: ""
+  OIDC_USERNAME_ATTRIBUTE: preferred_username
+  ENABLE_RESCAN_ON_FILESYSTEM_CHANGE: "true"
+  RESCAN_ON_FILESYSTEM_CHANGE_DELAY: "5"
+  TASK_TIMEOUT: "300"
+  TASK_RESULT_TTL: "86400"
+  SEVEN_ZIP_TIMEOUT: "60"
+  ENABLE_SCHEDULED_RESCAN: "true"
+  SCHEDULED_RESCAN_CRON: "0 3 * * *"
+  ENABLE_SCHEDULED_UPDATE_SWITCH_TITLEDB: "true"
+  SCHEDULED_UPDATE_SWITCH_TITLEDB_CRON: "0 4 * * *"
+  ENABLE_SCHEDULED_UPDATE_LAUNCHBOX_METADATA: "true"
+  SCHEDULED_UPDATE_LAUNCHBOX_METADATA_CRON: "0 4 * * *"
+  ENABLE_SCHEDULED_CONVERT_IMAGES_TO_WEBP: "true"
+  SCHEDULED_CONVERT_IMAGES_TO_WEBP_CRON: "0 4 * * *"
+  ENABLE_SCHEDULED_RETROACHIEVEMENTS_PROGRESS_SYNC: "true"
+  SCHEDULED_RETROACHIEVEMENTS_PROGRESS_SYNC_CRON: "0 4 * * *"
+  REFRESH_RETROACHIEVEMENTS_CACHE_DAYS: "30"
+  DISABLE_EMULATOR_JS: "false"
+  DISABLE_RUFFLE_RS: "false"
+  YOUTUBE_BASE_URL: https://www.youtube.com
+  TINFOIL_WELCOME_MESSAGE: "RomM Switch Library"
+  LOGLEVEL: DEBUG
+  FORCE_COLOR: ""
+  NO_COLOR: ""
+  WEB_SERVER_CONCURRENCY: "2"
+  WEB_SERVER_TIMEOUT: "300"
+  WEB_SERVER_KEEPALIVE: "2"
+  WEB_SERVER_MAX_REQUESTS: "1000"
+  WEB_SERVER_MAX_REQUESTS_JITTER: "100"
+  WEB_SERVER_WORKER_CONNECTIONS: "1000"
+  IPV4_ONLY: "false"
+  SCAN_TIMEOUT: ""
+  SCAN_WORKERS: ""
+  DEV_MODE: "false"
+  DEV_HTTPS: "false"
+  DEV_SQL_ECHO: "false"
+  SENTRY_DSN: ""

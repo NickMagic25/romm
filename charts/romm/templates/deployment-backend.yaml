@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "romm.backend.fullname" . }}
+  labels:
+    {{- include "romm.backend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "romm.backend.labels" . | nindent 8 }}
+      {{- with .Values.backend.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: backend
+          image: "{{ .Values.image.backend.repository }}:{{ default .Chart.AppVersion .Values.image.backend.tag }}"
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.backend.port }}
+          env:
+            {{- include "romm.renderEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: roms
+              mountPath: {{ .Values.roms.mountPath }}
+              {{- if and (eq .Values.roms.storage.type "nfs") .Values.roms.storage.nfs.readOnly }}
+              readOnly: true
+              {{- end }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+      volumes:
+        - name: roms
+          {{- if eq .Values.roms.storage.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{- if .Values.roms.storage.existingClaim }}
+              {{ .Values.roms.storage.existingClaim }}
+            {{- else }}
+              {{ include "romm.fullname" . }}-roms
+            {{- end }}
+          {{- else if eq .Values.roms.storage.type "nfs" }}
+          nfs:
+            server: {{ .Values.roms.storage.nfs.server | quote }}
+            path: {{ .Values.roms.storage.nfs.path | quote }}
+            readOnly: {{ .Values.roms.storage.nfs.readOnly }}
+          {{- end }}
+      {{- with .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
