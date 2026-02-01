@@ -1,0 +1,17 @@
+{{- if and (eq .Values.roms.storage.type "pvc") (not .Values.roms.storage.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "romm.fullname" . }}-roms
+  labels:
+    {{- include "romm.commonLabels" . | nindent 4 }}
+spec:
+  accessModes:
+    {{- toYaml .Values.roms.storage.pvc.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.roms.storage.pvc.size | quote }}
+  {{- if .Values.roms.storage.pvc.storageClassName }}
+  storageClassName: {{ .Values.roms.storage.pvc.storageClassName | quote }}
+  {{- end }}
+{{- end }}
